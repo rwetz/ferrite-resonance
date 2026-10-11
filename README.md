@@ -34,7 +34,7 @@ cargo run -- --file "C:/Music/song.wav"
 cargo run -- --smoke --file "C:/Music/song.wav"
 ```
 
-The `--smoke` command decodes and measures a file without opening a window or playing sound. `--version` prints the packaged version. `--play` starts a supplied file automatically; `--mute` keeps the output silent for native verification. 
+The `--smoke` command decodes and measures a file without opening a window or playing sound. `--version` prints the packaged version. `--play` starts a supplied file automatically; `--mute` keeps the output silent for native verification.
 
 Normal startup is empty and opens no browser or network service. Drag/drop and the native picker both use the same decoder.
 

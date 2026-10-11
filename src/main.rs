@@ -200,9 +200,21 @@ impl Render for Resonance {
                     responsive("ascii-room", {
                         let amplitudes = self.amplitudes.clone();
                         move |room, _, cx| {
-                            ascii_art(visual::scene(&amplitudes, seconds as f32))
-                                .cols((f32::from(room.width) / 9.).clamp(20., 180.) as usize)
-                                .color(hsla(palette(cx).accent))
+                            div()
+                                .size_full()
+                                .flex()
+                                .items_center()
+                                .justify_center()
+                                .child(
+                                    ascii_art(visual::scene(&amplitudes, seconds as f32))
+                                        .cols(
+                                            (f32::from(room.width) / 9.)
+                                                .min(f32::from(room.height) / 4.5)
+                                                .clamp(20., 180.)
+                                                as usize,
+                                        )
+                                        .color(hsla(palette(cx).accent)),
+                                )
                                 .into_any_element()
                         }
                     })
@@ -345,6 +357,7 @@ impl Render for Resonance {
                         .child(
                             div()
                                 .flex()
+                                .flex_wrap()
                                 .items_center()
                                 .gap_3()
                                 .child(
@@ -380,7 +393,7 @@ impl Render for Resonance {
                                         })),
                                 )
                                 .child(
-                                    div().flex_1().min_w_0().child(
+                                    div().flex_1().min_w(px(200.)).child(
                                         slider("seek")
                                             .range(0., duration as f32)
                                             .value(seconds as f32)

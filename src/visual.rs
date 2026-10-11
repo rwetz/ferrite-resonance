@@ -20,6 +20,7 @@ pub fn trace(frames: Vec<[f32; 2]>, vectors: bool, cx: &App) -> impl IntoElement
                     ));
                     let scale = b.size.width.min(b.size.height) * 0.42;
                     for [l, r] in frames {
+                        let (l, r) = (l.clamp(-1., 1.), r.clamp(-1., 1.));
                         let x = center.x + scale * (l - r) * 0.5;
                         let y = center.y - scale * (l + r) * 0.5;
                         w.paint_quad(fill(Bounds::new(point(x, y), size(px(2.), px(2.))), ink));
