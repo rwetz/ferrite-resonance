@@ -1,0 +1,83 @@
+name: Release
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+concurrency:
+  group: release
+  queue: max
+  cancel-in-progress: false
+permissions:
+  contents: write
+env:
+  CARGO_TERM_COLOR: always
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+      ref: ${{ steps.release.outputs.ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Test release version rules
+        run: python3 -m unittest discover -s .github/scripts -p 'test_*.py'
+      - name: Prepare versioned release
+        id: release
+        run: python3 .github/scripts/prepare_release.py
+
+  windows:
+    needs: prepare
+    env:
+      RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.ref }}
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - uses: Swatinem/rust-cache@v2
+      - name: Check tag matches package version
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path Cargo.toml -Pattern '^version = "([^"]+)"').Matches[0].Groups[1].Value
+          if ($env:RELEASE_TAG -ne "v$version") { throw "Tag and package version differ" }
+      - name: Build
+        run: cargo build --release --locked --target x86_64-pc-windows-msvc
+      - name: Clippy
+        run: cargo clippy --all-targets --locked --target x86_64-pc-windows-msvc -- -D warnings
+      - name: Tests
+        run: cargo test --release --locked --target x86_64-pc-windows-msvc
+      - name: Package and verify executable
+        shell: pwsh
+        run: |
+          $name = "ferrite-resonance-$env:RELEASE_TAG-x86_64-pc-windows-msvc"
+          $folder = Join-Path $env:RUNNER_TEMP $name
+          New-Item -ItemType Directory -Path $folder | Out-Null
+          Copy-Item -LiteralPath 'target/x86_64-pc-windows-msvc/release/ferrite-resonance.exe' -Destination $folder
+          foreach ($file in @('README.md', 'LICENSE', 'NOTICE', 'CHANGELOG.md')) {
+            Copy-Item -LiteralPath $file -Destination $folder
+          }
+          Copy-Item -LiteralPath 'assets/licenses' -Destination $folder -Recurse
+          $process = Start-Process -FilePath (Join-Path $folder 'ferrite-resonance.exe') -ArgumentList '--version' -WindowStyle Hidden -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Packaged executable failed" }
+          New-Item -ItemType Directory -Path dist | Out-Null
+          $archive = Join-Path (Resolve-Path dist) "$name.zip"
+          Compress-Archive -LiteralPath $folder -DestinationPath $archive
+          $hash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $name.zip" | Set-Content -LiteralPath dist/SHA256SUMS.txt -Encoding ascii
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $assets = @(Get-ChildItem -LiteralPath dist -File | Select-Object -ExpandProperty FullName)
+          gh release view $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $env:RELEASE_TAG @assets --verify-tag --title "Resonance $env:RELEASE_TAG" --generate-notes
+            if ($LASTEXITCODE -ne 0) { throw "Release publication failed" }
+          }

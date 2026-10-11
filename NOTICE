@@ -1,0 +1,35 @@
+ferrite-resonance
+Copyright 2026 Ryan Wetzstein
+Licensed under Apache-2.0. See LICENSE.
+
+Bundled Ferrite Design attribution follows:
+
+ferrite-design
+Copyright 2026 Ryan Wetzstein
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This crate embeds the following third-party fonts, unmodified, in
+assets/fonts/. They are NOT covered by the Apache License above; each
+keeps its own license, included alongside it.
+
+  PxPlus IBM VGA 8x16 (PxPlus_IBM_VGA_8x16.ttf)
+    From "The Ultimate Oldschool PC Font Pack" v2.2
+    (c) 2016-2020 VileR — https://int10h.org/oldschool-pc-fonts/
+    Licensed under Creative Commons Attribution-ShareAlike 4.0
+    International (CC BY-SA 4.0).
+    License text: assets/fonts/LICENSE-PxPlus-CC-BY-SA-4.0.txt
+
+  JetBrains Mono 2.304 (JetBrainsMono-Regular.ttf, JetBrainsMono-Bold.ttf)
+    (c) 2020 The JetBrains Mono Project Authors —
+    https://github.com/JetBrains/JetBrainsMono
+    Licensed under the SIL Open Font License, Version 1.1.
+    License text: assets/fonts/LICENSE-JetBrainsMono-OFL-1.1.txt
+
+Apps built on ferrite-design that redistribute these fonts (they are
+compiled into the binary) should carry this attribution, e.g. in an
+About screen or bundled NOTICE file.
+
+Audio decoder: Symphonia 0.5.5, unmodified, MPL-2.0.
+Source: https://github.com/pdeljanov/Symphonia and https://crates.io/crates/symphonia/0.5.5
+FFT: RustFFT 6.4.1, Apache-2.0 or MIT.
+Source: https://github.com/ejmahler/RustFFT
