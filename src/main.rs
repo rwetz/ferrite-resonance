@@ -393,7 +393,7 @@ impl Render for Resonance {
                                         })),
                                 )
                                 .child(
-                                    div().flex_1().min_w(px(200.)).child(
+                                    div().flex_1().min_w(px(300.)).child(
                                         slider("seek")
                                             .range(0., duration as f32)
                                             .value(seconds as f32)
@@ -410,9 +410,11 @@ impl Render for Resonance {
                                     ),
                                 )
                                 .child(
-                                    div().w(px(160.)).child(
+                                    div().min_w(px(220.)).flex_shrink_0().child(
                                         slider("volume")
+                                            .width(px(120.))
                                             .range(0., 1.)
+                                            .step(0.01)
                                             .value(f32::from_bits(
                                                 self.player.volume.load(Ordering::Relaxed),
                                             ))
