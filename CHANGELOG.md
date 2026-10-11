@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Use the full grayscale range for audible ASCII scenes and preserve black on silence.
 - Fit ASCII scenes to both panel dimensions and center them.
 - Wrap transport controls in small windows and contain stereo points within the plot.
 

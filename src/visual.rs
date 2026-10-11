@@ -126,9 +126,31 @@ pub fn scene(amplitudes: &[f32], phase: f32) -> ferrite_design::dither::Picture 
             let wave = (r * (0.5 + bass * 1.5) - phase * 6. + angle * 3.)
                 .sin()
                 .abs();
-            let value = ((1. - wave) * energy * 14.).clamp(0., 15.) as u8;
+            let value = ((1. - wave) * energy.sqrt() * 255.).clamp(0., 255.) as u8;
             pixels.push(value);
         }
     }
     ferrite_design::dither::Picture::new(width, height, pixels)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn audible_input_produces_visible_ascii_and_silence_stays_dark() {
+        let active = scene(&[0.5; 64], 0.2);
+        let (width, height) = active.size();
+        let brightest = (0..height)
+            .flat_map(|y| (0..width).map(move |x| (x, y)))
+            .map(|(x, y)| active.raw(x, y))
+            .max()
+            .unwrap();
+        assert!(
+            brightest > 128,
+            "Active audio must reach visible ASCII densities"
+        );
+        assert_ne!(active.id(), scene(&[0.5; 64], 0.4).id());
+        let silent = scene(&[0.; 64], 0.2);
+        assert!((0..height).all(|y| (0..width).all(|x| silent.raw(x, y) == 0)));
+    }
 }
