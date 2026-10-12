@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Short windows scroll instead of clipping the visual and controls.
+
 - Keep volume controls inside the transport and adjust volume in 1% steps.
 - Use the full grayscale range for audible ASCII scenes and preserve black on silence.
 - Fit ASCII scenes to both panel dimensions and center them.

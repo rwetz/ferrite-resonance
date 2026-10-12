@@ -1,8 +1,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod audio;
 mod dsp;
+mod playback_prefs;
 mod prefs;
+mod prefs_store;
 mod probe;
+mod settings_ui;
 mod track;
 mod visual;
 mod worker;
@@ -20,6 +23,7 @@ gpui::actions!(resonance, [OpenSong, PlayPause]);
 
 struct Resonance {
     palette: Entity<CommandPalette>,
+    settings: Entity<settings_ui::Settings>,
     _appearance: Subscription,
     player: Arc<audio::Player>,
     track: Option<Arc<track::Track>>,
@@ -36,6 +40,7 @@ struct Resonance {
 }
 impl Resonance {
     fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
+        let (mode, volume) = playback_prefs::load();
         let tick = cx.spawn(async move |this, cx| {
             loop {
                 cx.background_executor()
@@ -47,6 +52,7 @@ impl Resonance {
             }
         });
         let mut app = Self {
+            settings: cx.new(|_| settings_ui::Settings::new()),
             palette: cx.new(|cx| CommandPalette::new(window, cx)),
             _appearance: theme::follow_system(window),
             player: audio::Player::new(),
@@ -55,13 +61,14 @@ impl Resonance {
             fft: dsp::Spectrum::new(),
             amplitudes: vec![0.; dsp::BINS],
             frames: vec![[0.; 2]; dsp::FFT_SIZE],
-            mode: 0,
+            mode,
             busy: false,
             status: "Drop a song or open one with Ctrl+O".into(),
             generation: 0,
             job: None,
             _tick: tick,
         };
+        app.player.volume(volume);
         if std::env::args().any(|a| a == "--mute") {
             app.player.volume(0.);
         }
@@ -107,6 +114,7 @@ impl Resonance {
                         )
                     }),
             );
+            commands.push(settings_ui::settings_command(app.settings.clone()));
             palette.set_commands(commands, cx);
         });
         if let Some(path) = cli_path() {
@@ -114,6 +122,15 @@ impl Resonance {
         }
         app
     }
+    fn save_playback(&mut self) {
+        if let Err(error) = playback_prefs::save(
+            self.mode,
+            f32::from_bits(self.player.volume.load(Ordering::Relaxed)),
+        ) {
+            self.status = error;
+        }
+    }
+
     fn open(&mut self, cx: &mut Context<Self>) {
         let paths = cx.prompt_for_paths(PathPromptOptions {
             files: true,
@@ -266,9 +283,14 @@ impl Render for Resonance {
                     this.player.toggle();
                     cx.notify();
                 }))
+                .on_action(cx.listener(|this, _: &settings_ui::ToggleSettings, _, cx| {
+                    this.settings.update(cx, |s, cx| s.toggle(cx));
+                }))
+                .child(self.settings.clone())
                 .child(self.palette.clone())
                 .child(
                     title_bar("Resonance")
+                        .child(settings_ui::button(self.settings.clone()))
                         .child(
                             Button::new("menu")
                                 .icon(Icon::Menu)
@@ -295,13 +317,19 @@ impl Render for Resonance {
                         .min_h_0()
                         .flex()
                         .flex_col()
-                        .p_4()
-                        .gap_3()
                         .on_drop(cx.listener(|this, paths: &ExternalPaths, _, cx| {
                             if let Some(path) = paths.paths().first() {
                                 this.load(path.clone(), cx);
                             }
                         }))
+                        // Short windows scroll; the visual takes what's spare.
+                        .child(scroll_area("song-scroll").flex_1().min_h_0().child(
+                        div()
+                        .flex()
+                        .flex_col()
+                        .min_h_full()
+                        .p_4()
+                        .gap_3()
                         .child(
                             div()
                                 .flex()
@@ -325,6 +353,7 @@ impl Render for Resonance {
                                         .selected(self.mode)
                                         .on_select(cx.listener(|this, index, _, cx| {
                                             this.mode = *index;
+                                            this.save_playback();
                                             cx.notify();
                                         })),
                                 ),
@@ -393,7 +422,7 @@ impl Render for Resonance {
                                         })),
                                 )
                                 .child(
-                                    div().flex_1().min_w(px(300.)).child(
+                                    div().flex_1().min_w(px(200.)).child(
                                         slider("seek")
                                             .range(0., duration as f32)
                                             .value(seconds as f32)
@@ -421,11 +450,13 @@ impl Render for Resonance {
                                             .format(|v| format!("VOL {:.0}%", v * 100.).into())
                                             .on_change(cx.listener(|this, value, _, cx| {
                                                 this.player.volume(*value);
+                                                this.save_playback();
                                                 cx.notify();
                                             })),
                                     ),
                                 ),
                         ),
+                        )),
                 )
                 .child(status_bar().left_live(status).right_live(format!(
                     "{} / {}",
@@ -471,6 +502,7 @@ fn main() {
         motion::set_fps(30);
         cx.bind_keys([
             KeyBinding::new("ctrl-shift-p", TogglePalette, None),
+            KeyBinding::new("ctrl-,", settings_ui::ToggleSettings, None),
             KeyBinding::new("ctrl-o", OpenSong, None),
             KeyBinding::new("space", PlayPause, None),
         ]);

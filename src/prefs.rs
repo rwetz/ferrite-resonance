@@ -1,6 +1,13 @@
 //! Per-app preferences. Explicit launcher environment values take precedence.
 use ferrite_design::{Appearance, schemes::Scheme, theme};
-use gpui::{App, Window};
+use gpui::{App, Global, Window};
+
+#[derive(Default)]
+struct SaveStatus(Option<String>);
+impl Global for SaveStatus {}
+pub fn save_error(cx: &App) -> Option<String> {
+    cx.try_global::<SaveStatus>().and_then(|s| s.0.clone())
+}
 fn path() -> Option<std::path::PathBuf> {
     ferrite_design::chrome::config_dir()
         .map(|d| d.join(concat!(env!("CARGO_PKG_NAME"), "-theme.json")))
@@ -22,28 +29,55 @@ pub fn init(cx: &mut App) {
     {
         theme::set_scheme(scheme, cx);
     }
+    if let Some(fps) = data
+        .as_ref()
+        .and_then(|d| d["fps"].as_u64())
+        .filter(|fps| (12..=240).contains(fps))
+    {
+        ferrite_design::motion::set_fps(fps as u32);
+    }
+    if let Some(density) = data
+        .as_ref()
+        .and_then(|d| d["density"].as_str())
+        .and_then(|key| {
+            theme::Density::ALL
+                .into_iter()
+                .find(|d| d.label().eq_ignore_ascii_case(key))
+        })
+    {
+        theme::set_density(density, cx);
+    }
     theme::apply_env(cx);
 }
-fn save(cx: &App) {
-    let Some(path) = path() else {
-        return;
-    };
-    let Some(parent) = path.parent() else {
-        return;
-    };
-    if std::fs::create_dir_all(parent).is_err() {
-        return;
-    }
+fn write(cx: &App) -> Result<(), String> {
+    let path = path().ok_or("Could not find the settings directory")?;
+
     let appearance = match theme::appearance(cx) {
         Appearance::Dark => "dark",
         Appearance::Light => "light",
         Appearance::System => "system",
     };
-    let data = serde_json::json!({"scheme":theme::scheme(cx).key,"appearance":appearance});
-    let temp = path.with_extension(format!("{}.tmp", std::process::id()));
-    if std::fs::write(&temp, data.to_string()).is_ok() {
-        let _ = std::fs::rename(temp, path);
+    let data = serde_json::json!({
+        "scheme": theme::scheme(cx).key, "appearance": appearance,
+        "fps": ferrite_design::motion::fps(), "density": theme::density(cx).label().to_lowercase()
+    });
+    crate::prefs_store::write(&path, &data.to_string())
+}
+fn save(cx: &mut App) {
+    let error = write(cx).err();
+    if let Some(error) = &error {
+        eprintln!("{error}");
     }
+    cx.set_global(SaveStatus(error));
+    cx.refresh_windows();
+}
+pub fn fps(fps: u32, cx: &mut App) {
+    ferrite_design::motion::set_fps(fps);
+    save(cx);
+}
+pub fn density(density: theme::Density, cx: &mut App) {
+    theme::set_density(density, cx);
+    save(cx);
 }
 pub fn scheme(scheme: &'static Scheme, cx: &mut App) {
     theme::set_scheme(scheme, cx);
