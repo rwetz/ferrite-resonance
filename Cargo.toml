@@ -1,6 +1,6 @@
 [package]
 name = "ferrite-resonance"
-version = "0.1.0"
+version = "0.1.4"
 description = "A Ferrite song visualizer: waveform, spectrum, stereo vectorscope and audio-reactive ASCII."
 authors = ["Ryan Wetzstein"]
 license = "Apache-2.0"
