@@ -1,8 +1,20 @@
-# Resonance
+<p align="center">
+  <img src="assets/logo.svg" width="128" height="128" alt="Resonance logo">
+</p>
 
-A native Ferrite song visualizer with real local-file playback.
+<h1 align="center">Resonance</h1>
 
-![Icon](assets/logo.svg)
+<p align="center">
+  A native Ferrite song visualizer with real local-file playback.
+</p>
+
+<p align="center">
+  <a href="https://github.com/rwetz/ferrite-resonance/actions/workflows/ci.yml"><img src="https://github.com/rwetz/ferrite-resonance/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/rwetz/ferrite-resonance/releases/latest"><img src="https://img.shields.io/github/v/release/rwetz/ferrite-resonance?color=F2A93B&labelColor=18181B" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-3D3D42?labelColor=18181B" alt="License"></a>
+</p>
+
+![Resonance showing a loaded song's waveform and overview](docs/main.png)
 
 - Open or drop a song. Play/pause with Space, seek, restart, adjust volume and loop the whole track.
 - Four live source-audio views: waveform, logarithmic spectrum, stereo vectorscope and audio-reactive ASCII.
@@ -57,6 +69,15 @@ Apache-2.0. Bundled font licenses and the Symphonia MPL-2.0 license accompany th
 Open the sliders button in the title bar, press Ctrl+, or choose Settings from the command palette. All ten schemes, Dark/Light/System appearance, motion refresh rate (12 to 240 FPS), and row density apply immediately and persist per app. Save failures appear in Settings. Start with `--settings` to open the drawer directly. Ferrite launcher environment overrides take precedence at startup.
 
 Playback volume and visualization mode are also remembered. Startup does not reopen or autoplay the previous song.
+
+## Keys
+
+| Keys | |
+|---|---|
+| <kbd>Space</kbd> | Play / pause |
+| <kbd>Ctrl</kbd>+<kbd>O</kbd> | Open a file |
+| <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> | Command palette |
+| <kbd>Ctrl</kbd>+<kbd>,</kbd> | Settings |
 
 ---
 
