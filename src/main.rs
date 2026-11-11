@@ -323,140 +323,165 @@ impl Render for Resonance {
                             }
                         }))
                         // Short windows scroll; the visual takes what's spare.
-                        .child(scroll_area("song-scroll").flex_1().min_h_0().child(
-                        div()
-                        .flex()
-                        .flex_col()
-                        .min_h_full()
-                        .p_4()
-                        .gap_3()
                         .child(
-                            div()
-                                .flex()
-                                .items_center()
-                                .gap_3()
-                                .child(
-                                    div().flex_1().min_w_0().overflow_hidden().child(
-                                        self.track
-                                            .as_ref()
-                                            .map_or("DROP A SONG TO BEGIN".into(), |t| {
-                                                t.name.clone()
-                                            }),
-                                    ),
-                                )
-                                .child(
-                                    segmented("mode")
-                                        .option("Wave")
-                                        .option("Spectrum")
-                                        .option("Stereo")
-                                        .option("ASCII")
-                                        .selected(self.mode)
-                                        .on_select(cx.listener(|this, index, _, cx| {
-                                            this.mode = *index;
-                                            this.save_playback();
-                                            cx.notify();
-                                        })),
-                                ),
-                        )
-                        .child(
-                            panel(
-                                [
-                                    "Waveform",
-                                    "Spectrum",
-                                    "Stereo vectorscope",
-                                    "Audio-reactive ASCII",
-                                ][self.mode],
-                            )
-                            .meta(if self.mode == 1 {
-                                "30 Hz - 20 kHz / -80 to 0 dBFS"
-                            } else {
-                                "SOURCE AUDIO / BEFORE VOLUME"
-                            })
-                            .flex_1()
-                            .min_h(px(120.))
-                            .child(div().flex_1().min_h_0().child(visual)),
-                        )
-                        .when_some(overview, |d, overview| {
-                            d.child(
-                                panel("Song overview")
-                                    .meta(details)
-                                    .child(div().h(px(72.)).w_full().child(overview)),
-                            )
-                        })
-                        .child(
-                            div()
-                                .flex()
-                                .flex_wrap()
-                                .items_center()
-                                .gap_3()
-                                .child(
-                                    Button::new("play")
-                                        .label(if playing { "Pause" } else { "Play" })
-                                        .icon(if playing { Icon::Pause } else { Icon::Play })
-                                        .primary()
-                                        .disabled(
-                                            self.track.is_none() || self.busy || error.is_some(),
+                            scroll_area("song-scroll").flex_1().min_h_0().child(
+                                div()
+                                    .flex()
+                                    .flex_col()
+                                    .min_h_full()
+                                    .p_4()
+                                    .gap_3()
+                                    .child(
+                                        div()
+                                            .flex()
+                                            .items_center()
+                                            .gap_3()
+                                            .child(
+                                                div().flex_1().min_w_0().overflow_hidden().child(
+                                                    self.track.as_ref().map_or(
+                                                        "DROP A SONG TO BEGIN".into(),
+                                                        |t| t.name.clone(),
+                                                    ),
+                                                ),
+                                            )
+                                            .child(
+                                                segmented("mode")
+                                                    .option("Wave")
+                                                    .option("Spectrum")
+                                                    .option("Stereo")
+                                                    .option("ASCII")
+                                                    .selected(self.mode)
+                                                    .on_select(cx.listener(
+                                                        |this, index, _, cx| {
+                                                            this.mode = *index;
+                                                            this.save_playback();
+                                                            cx.notify();
+                                                        },
+                                                    )),
+                                            ),
+                                    )
+                                    .child(
+                                        panel(
+                                            [
+                                                "Waveform",
+                                                "Spectrum",
+                                                "Stereo vectorscope",
+                                                "Audio-reactive ASCII",
+                                            ][self.mode],
                                         )
-                                        .on_click(cx.listener(|this, _, _, cx| {
-                                            this.player.toggle();
-                                            cx.notify();
-                                        })),
-                                )
-                                .child(
-                                    Button::new("restart")
-                                        .label("Restart")
-                                        .ghost()
-                                        .disabled(self.track.is_none())
-                                        .on_click(cx.listener(|this, _, _, cx| {
-                                            this.player.seek(0);
-                                            cx.notify();
-                                        })),
-                                )
-                                .child(
-                                    switch("loop")
-                                        .label("Loop song")
-                                        .checked(self.player.looping.load(Ordering::Relaxed))
-                                        .on_change(cx.listener(|this, value, _, cx| {
-                                            this.player.looping.store(*value, Ordering::Relaxed);
-                                            cx.notify();
-                                        })),
-                                )
-                                .child(
-                                    div().flex_1().min_w(px(200.)).child(
-                                        slider("seek")
-                                            .range(0., duration as f32)
-                                            .value(seconds as f32)
-                                            .disabled(self.track.is_none())
-                                            .format(|v| track::time(v as f64).into())
-                                            .on_change(cx.listener(|this, value, _, cx| {
-                                                if let Some(t) = &this.track {
-                                                    this.player.seek(
-                                                        (*value as f64 * t.rate as f64) as u64,
-                                                    );
-                                                }
-                                                cx.notify();
-                                            })),
+                                        .meta(if self.mode == 1 {
+                                            "30 Hz - 20 kHz / -80 to 0 dBFS"
+                                        } else {
+                                            "SOURCE AUDIO / BEFORE VOLUME"
+                                        })
+                                        .flex_1()
+                                        .min_h(px(120.))
+                                        .child(div().flex_1().min_h_0().child(visual)),
+                                    )
+                                    .when_some(overview, |d, overview| {
+                                        d.child(
+                                            panel("Song overview")
+                                                .meta(details)
+                                                .child(div().h(px(72.)).w_full().child(overview)),
+                                        )
+                                    })
+                                    .child(
+                                        div()
+                                            .flex()
+                                            .flex_wrap()
+                                            .items_center()
+                                            .gap_3()
+                                            .child(
+                                                Button::new("play")
+                                                    .label(if playing { "Pause" } else { "Play" })
+                                                    .icon(if playing {
+                                                        Icon::Pause
+                                                    } else {
+                                                        Icon::Play
+                                                    })
+                                                    .primary()
+                                                    .disabled(
+                                                        self.track.is_none()
+                                                            || self.busy
+                                                            || error.is_some(),
+                                                    )
+                                                    .on_click(cx.listener(|this, _, _, cx| {
+                                                        this.player.toggle();
+                                                        cx.notify();
+                                                    })),
+                                            )
+                                            .child(
+                                                Button::new("restart")
+                                                    .label("Restart")
+                                                    .ghost()
+                                                    .disabled(self.track.is_none())
+                                                    .on_click(cx.listener(|this, _, _, cx| {
+                                                        this.player.seek(0);
+                                                        cx.notify();
+                                                    })),
+                                            )
+                                            .child(
+                                                switch("loop")
+                                                    .label("Loop song")
+                                                    .checked(
+                                                        self.player.looping.load(Ordering::Relaxed),
+                                                    )
+                                                    .on_change(cx.listener(
+                                                        |this, value, _, cx| {
+                                                            this.player
+                                                                .looping
+                                                                .store(*value, Ordering::Relaxed);
+                                                            cx.notify();
+                                                        },
+                                                    )),
+                                            )
+                                            .child(
+                                                div().flex_1().min_w(px(200.)).child(
+                                                    slider("seek")
+                                                        .range(0., duration as f32)
+                                                        .value(seconds as f32)
+                                                        .disabled(self.track.is_none())
+                                                        .format(|v| track::time(v as f64).into())
+                                                        .on_change(cx.listener(
+                                                            |this, value, _, cx| {
+                                                                if let Some(t) = &this.track {
+                                                                    this.player.seek(
+                                                                        (*value as f64
+                                                                            * t.rate as f64)
+                                                                            as u64,
+                                                                    );
+                                                                }
+                                                                cx.notify();
+                                                            },
+                                                        )),
+                                                ),
+                                            )
+                                            .child(
+                                                div().min_w(px(220.)).flex_shrink_0().child(
+                                                    slider("volume")
+                                                        .width(px(120.))
+                                                        .range(0., 1.)
+                                                        .step(0.01)
+                                                        .value(f32::from_bits(
+                                                            self.player
+                                                                .volume
+                                                                .load(Ordering::Relaxed),
+                                                        ))
+                                                        .format(|v| {
+                                                            format!("VOL {:.0}%", v * 100.).into()
+                                                        })
+                                                        .on_change(cx.listener(
+                                                            |this, value, _, cx| {
+                                                                this.player.volume(*value);
+                                                                this.save_playback();
+                                                                cx.notify();
+                                                            },
+                                                        )),
+                                                ),
+                                            ),
                                     ),
-                                )
-                                .child(
-                                    div().min_w(px(220.)).flex_shrink_0().child(
-                                        slider("volume")
-                                            .width(px(120.))
-                                            .range(0., 1.)
-                                            .step(0.01)
-                                            .value(f32::from_bits(
-                                                self.player.volume.load(Ordering::Relaxed),
-                                            ))
-                                            .format(|v| format!("VOL {:.0}%", v * 100.).into())
-                                            .on_change(cx.listener(|this, value, _, cx| {
-                                                this.player.volume(*value);
-                                                this.save_playback();
-                                                cx.notify();
-                                            })),
-                                    ),
-                                ),
+                            ),
                         ),
-                        )),
                 )
                 .child(status_bar().left_live(status).right_live(format!(
                     "{} / {}",
